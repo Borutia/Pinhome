@@ -1,16 +1,15 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime
-from authorization.database import Base
+from ext import db
 
 
-class User(Base):
-    __tablename__ = 'auth_users'
+class User(db.Model):
+    __tablename__ = 'user'
 
-    id = Column(Integer, primary_key=True)
-    username = Column(String(200), nullable=False, unique=False)
-    password = Column(String(200), nullable=False)
-    date_registration = Column(DateTime, default=datetime.utcnow(), nullable=True)
-    token = Column(String(500), nullable=False)
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(200), nullable=False, unique=False)
+    password = db.Column(db.String(200), nullable=False)
+    date_registration = db.Column(db.DateTime, default=datetime.utcnow(), nullable=True)
+    token = db.Column(db.String(500), nullable=False)
 
     def __init__(self, username=None, password=None, token=None):
         self.username = username
