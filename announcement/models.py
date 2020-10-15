@@ -23,7 +23,7 @@ class Announcement(db.Model):
     category = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
     created = db.Column(DateTime(timezone=True), server_default=func.now())
     deleted = db.Column(db.Boolean, default=False)
-    user = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
 
 class ImagesAnnoun(db.Model):
@@ -38,7 +38,7 @@ class Want(db.Model):
     name = db.Column(db.String(100), nullable=False)
     announcement = db.Column(db.Integer, db.ForeignKey('announcement.id'), nullable=False)
     created = db.Column(DateTime(timezone=True), server_default=func.now())
-    user = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
 
 class Deal(db.Model):
