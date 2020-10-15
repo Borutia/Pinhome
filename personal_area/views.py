@@ -3,6 +3,7 @@ from ext import db
 from authorization.authorization import token_check
 from authorization.models import User
 from personal_area.models import Personal_area
+from .schema import Personal_area_schema
 
 personal_area = Blueprint('personal_area', __name__)
 
@@ -46,6 +47,8 @@ def create_personal_area(token):
 @token_check
 def read_personal_area(token, id):
     currently_user = Personal_area.query.filter(Personal_area.id_user == id).one()
+    personal_area_schema = Personal_area_schema()
+    currently_user = personal_area_schema.dump(currently_user)
     return {'personal_area_by_id': currently_user}
 
 
