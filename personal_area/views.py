@@ -4,6 +4,7 @@ from authorization.authorization import token_check
 from authorization.models import User
 from personal_area.models import Personal_area
 from .schema import Personal_area_schema
+import json
 
 personal_area = Blueprint('personal_area', __name__)
 
@@ -12,6 +13,7 @@ personal_area = Blueprint('personal_area', __name__)
 @token_check
 def create_personal_area(token):
     data = request.get_json()
+    #data2 = json.loads(request.form['request'])
     if 'surname' in data and 'name' in data:
         if data['surname'] == '' or data['name'] == '':
             return {'error': 'Empty fields'}, 400
@@ -32,9 +34,10 @@ def create_personal_area(token):
                     personal_area.email = data['email']
                 if 'geolocation' in data:
                     personal_area.geolocation = data['geolocation']
-
+                # data['id_user'] = get_user.id
+                # personal_area_schema = Personal_area_schema()
+                # personal_area = personal_area_schema.load(data)
                 db.session.add(personal_area)
-                #db.session.flush()
                 db.session.commit()
                 return {'message': 'successfully!'}, 201
             except:
@@ -74,9 +77,7 @@ def update_personal_area(token):
                 personal_area.email = data['email']
             if 'geolocation' in data:
                 personal_area.geolocation = data['geolocation']
-
             db.session.add(personal_area)
-            # db.session.flush()
             db.session.commit()
             return {'message': 'successfully!'}, 201
         except:
