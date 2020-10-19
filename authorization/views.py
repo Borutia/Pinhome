@@ -16,7 +16,10 @@ def sign_in():
         check_password = check_password_hash(user.password, data['password'])
         if check_password:
             get_user = User.query.filter(User.token == user.token).one()
-            res = make_response({'id': get_user.id})
+            res = make_response({
+                'id': get_user.id,
+                'have_personal_area': get_user.have_personal_area
+            })
             res.set_cookie('token', user.token, max_age=60*60)
             return res
         return jsonify({'error': 'Incorrect username or password'}), 401

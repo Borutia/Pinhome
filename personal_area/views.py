@@ -1,19 +1,24 @@
-from flask import Blueprint, request
-from ext import db
+import json
+import os
+from uuid import uuid4
+
+from flask import Blueprint, request, current_app
+from werkzeug.utils import secure_filename
+
 from authorization.authorization import token_check
 from authorization.models import User
+from ext import db
+from helpers import allowed_file
 from personal_area.models import Personal_area
-from .schema import Personal_area_schema
-import json
+from .schema import Personal_area_schema, Images_personal_area_schema
 
 personal_area = Blueprint('personal_area', __name__)
 
 
-@personal_area.route('/personal_area', methods=['POST'])
+@personal_area.route('/', methods=['POST'])
 @token_check
 def create_personal_area(token):
-    data = request.get_json()
-    #data2 = json.loads(request.form['request'])
+    data = json.loads(request.form['request'])
     if 'surname' in data and 'name' in data:
         if data['surname'] == '' or data['name'] == '':
             return {'error': 'Empty fields'}, 400
@@ -21,24 +26,32 @@ def create_personal_area(token):
         check_personal_area = db.session.query(Personal_area).filter_by(id_user=get_user.id).first()
         if not check_personal_area:
             try:
-                personal_area = Personal_area(
-                    surname=data['surname'],
-                    name=data['name'],
-                    id_user=get_user.id
-                )
-                if 'patronymic' in data:
-                    personal_area.patronymic = data['patronymic']
-                if 'phone_number' in data:
-                    personal_area.phone_number = data['phone_number']
-                if 'email' in data:
-                    personal_area.email = data['email']
-                if 'geolocation' in data:
-                    personal_area.geolocation = data['geolocation']
-                # data['id_user'] = get_user.id
-                # personal_area_schema = Personal_area_schema()
-                # personal_area = personal_area_schema.load(data)
+                personal_area_schema = Personal_area_schema()
+                data['id_user'] = get_user.id
+                personal_area = personal_area_schema.load(data)
                 db.session.add(personal_area)
+                db.session.flush()
+                id = personal_area.id
                 db.session.commit()
+                image_schema = Images_personal_area_schema()
+                files = request.files.getlist('photo')
+                for file in files:
+                    if file and allowed_file(file.filename):
+                        filename = secure_filename(file.filename)
+                        extension = filename.split()[-1]
+                        new_filename = "upload-{}.{}".format(
+                            uuid4(), extension
+                        )
+
+                        file.save(os.path.join(current_app.config['UPLOAD_FOLDER_PERSONAL_AREA'], new_filename))
+                        img_data = {
+                            "image_path": f'/images/uploads_personal_area/{new_filename}',
+                            "id_personal_area": id
+                        }
+                        db_image = image_schema.load(img_data)
+                        db.session.add(db_image)
+                        db.session.commit()
+
                 return {'message': 'successfully!'}, 201
             except:
                 return {'message': 'error create'}, 401
@@ -46,7 +59,7 @@ def create_personal_area(token):
     return {'error': 'Empty fields'}, 400
 
 
-@personal_area.route('/personal_area/<id>', methods=['GET'])
+@personal_area.route('/<id>', methods=['GET'])
 @token_check
 def read_personal_area(token, id):
     currently_user = Personal_area.query.filter(Personal_area.id_user == id).one()
@@ -55,7 +68,7 @@ def read_personal_area(token, id):
     return {'personal_area_by_id': currently_user}
 
 
-@personal_area.route('/personal_area', methods=['PUT'])
+@personal_area.route('/', methods=['PUT'])
 @token_check
 def update_personal_area(token):
     get_user = User.query.filter(User.token == token).one()
@@ -85,7 +98,7 @@ def update_personal_area(token):
     return {'error': 'Personal_area not found'}, 401
 
 
-@personal_area.route('/personal_area', methods=['DELETE'])
+@personal_area.route('/', methods=['DELETE'])
 @token_check
 def delete_personal_area(token):
     get_user = User.query.filter(User.token == token).one()
