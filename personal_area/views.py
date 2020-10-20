@@ -32,7 +32,11 @@ def create_personal_area(token):
                 db.session.add(personal_area)
                 db.session.flush()
                 id = personal_area.id
-                db.session.commit()
+
+                user = User.query.get(get_user.id)
+                user.have_personal_area = 1
+                db.session.add(user)
+
                 image_schema = Images_personal_area_schema()
                 files = request.files.getlist('photo')
                 for file in files:
@@ -50,8 +54,8 @@ def create_personal_area(token):
                         }
                         db_image = image_schema.load(img_data)
                         db.session.add(db_image)
-                        db.session.commit()
 
+                db.session.commit()
                 return {'message': 'successfully!'}, 201
             except:
                 return {'message': 'error create'}, 401
@@ -72,25 +76,46 @@ def read_personal_area(token, id):
 @token_check
 def update_personal_area(token):
     get_user = User.query.filter(User.token == token).one()
-    check_personal_area = db.session.query(Personal_area).filter_by(id_user=get_user.id).first()
-    if check_personal_area:
-        data = request.get_json()
+    personal_area = db.session.query(Personal_area).filter_by(id_user=get_user.id).first()
+    if personal_area:
+        data = json.loads(request.form['request'])
         try:
-            if 'surname' in data:
+            personal_area = Personal_area.query.get(personal_area.id)
+            if data.get('surname'):
                 if data['surname'] != '':
                     personal_area.surname = data['surname']
-            if 'name' in data:
+            if data.get('name'):
                 if data['name'] != '':
                     personal_area.name = data['name']
-            if 'patronymic' in data:
+            if data.get('patronymic'):
                 personal_area.patronymic = data['patronymic']
-            if 'phone_number' in data:
+            if data.get('phone_number'):
                 personal_area.phone_number = data['phone_number']
-            if 'email' in data:
+            if data.get('email'):
                 personal_area.email = data['email']
-            if 'geolocation' in data:
+            if data.get('geolocation'):
                 personal_area.geolocation = data['geolocation']
+
             db.session.add(personal_area)
+
+            image_schema = Images_personal_area_schema()
+            files = request.files.getlist('photo')
+            for file in files:
+                if file and allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    extension = filename.split()[-1]
+                    new_filename = "upload-{}.{}".format(
+                        uuid4(), extension
+                    )
+
+                    file.save(os.path.join(current_app.config['UPLOAD_FOLDER_PERSONAL_AREA'], new_filename))
+                    img_data = {
+                        "image_path": f'/images/uploads_personal_area/{new_filename}',
+                        "id_personal_area": personal_area.id
+                    }
+                    db_image = image_schema.load(img_data)
+                    db.session.add(db_image)
+
             db.session.commit()
             return {'message': 'successfully!'}, 201
         except:
