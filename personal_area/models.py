@@ -31,4 +31,4 @@ class Images_personal_area(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     image_path = db.Column(db.String, nullable=True)
     created = db.Column(DateTime(timezone=True), server_default=func.now())
-    id_personal_area = db.Column(db.Integer, db.ForeignKey('personal_area.id'), nullable=False)
+    id_personal_area = db.Column(db.Integer, db.ForeignKey('personal_area.id'), nullable=False, unique=True)

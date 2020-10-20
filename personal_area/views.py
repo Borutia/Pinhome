@@ -9,7 +9,7 @@ from authorization.authorization import token_check
 from authorization.models import User
 from ext import db
 from helpers import allowed_file
-from personal_area.models import Personal_area
+from personal_area.models import Personal_area, Images_personal_area
 from .schema import Personal_area_schema, Images_personal_area_schema
 
 personal_area = Blueprint('personal_area', __name__)
@@ -38,8 +38,9 @@ def create_personal_area(token):
                 db.session.add(user)
 
                 image_schema = Images_personal_area_schema()
-                files = request.files.getlist('photo')
-                for file in files:
+
+                if request.files.get('photo'):
+                    file = request.files.get('photo')
                     if file and allowed_file(file.filename):
                         filename = secure_filename(file.filename)
                         extension = filename.split()[-1]
@@ -49,11 +50,18 @@ def create_personal_area(token):
 
                         file.save(os.path.join(current_app.config['UPLOAD_FOLDER_PERSONAL_AREA'], new_filename))
                         img_data = {
-                            "image_path": f'/images/uploads_personal_area/{new_filename}',
+                            "image_path": f'/images/personal_area/{new_filename}',
                             "id_personal_area": id
                         }
                         db_image = image_schema.load(img_data)
                         db.session.add(db_image)
+                else:
+                    img_data = {
+                        "image_path": f'/images/default.jpg',
+                        "id_personal_area": id
+                    }
+                    db_image = image_schema.load(img_data)
+                    db.session.add(db_image)
 
                 db.session.commit()
                 return {'message': 'successfully!'}, 201
@@ -66,10 +74,19 @@ def create_personal_area(token):
 @personal_area.route('/<id>', methods=['GET'])
 @token_check
 def read_personal_area(token, id):
-    currently_user = Personal_area.query.filter(Personal_area.id_user == id).one()
-    personal_area_schema = Personal_area_schema()
-    currently_user = personal_area_schema.dump(currently_user)
-    return {'personal_area_by_id': currently_user}
+    try:
+        get_personal_area = Personal_area.query.filter(Personal_area.id == id).one()
+        personal_area_schema = Personal_area_schema()
+        currently_user = personal_area_schema.dump(get_personal_area)
+        get_photo = db.session.query(Images_personal_area).filter_by(id_personal_area=get_personal_area.id).first()
+        image_schema = Images_personal_area_schema()
+        photo = image_schema.dump(get_photo)
+        return {
+            'currently_user': currently_user,
+            'photo': photo,
+        }, 200
+    except:
+        return {'error': 'User not found'}, 401
 
 
 @personal_area.route('/', methods=['PUT'])
@@ -78,48 +95,58 @@ def update_personal_area(token):
     get_user = User.query.filter(User.token == token).one()
     personal_area = db.session.query(Personal_area).filter_by(id_user=get_user.id).first()
     if personal_area:
-        data = json.loads(request.form['request'])
+        if request.form:
+            data = json.loads(request.form['request'])
+            try:
+                personal_area = Personal_area.query.get(personal_area.id)
+                if data.get('surname'):
+                    if data['surname'] != '':
+                        personal_area.surname = data['surname']
+                if data.get('name'):
+                    if data['name'] != '':
+                        personal_area.name = data['name']
+                if data.get('patronymic'):
+                    personal_area.patronymic = data['patronymic']
+                if data.get('phone_number'):
+                    personal_area.phone_number = data['phone_number']
+                if data.get('email'):
+                    personal_area.email = data['email']
+                if data.get('geolocation'):
+                    personal_area.geolocation = data['geolocation']
+
+                db.session.add(personal_area)
+            except:
+                return {'message': 'error edit personal area'}, 401
         try:
-            personal_area = Personal_area.query.get(personal_area.id)
-            if data.get('surname'):
-                if data['surname'] != '':
-                    personal_area.surname = data['surname']
-            if data.get('name'):
-                if data['name'] != '':
-                    personal_area.name = data['name']
-            if data.get('patronymic'):
-                personal_area.patronymic = data['patronymic']
-            if data.get('phone_number'):
-                personal_area.phone_number = data['phone_number']
-            if data.get('email'):
-                personal_area.email = data['email']
-            if data.get('geolocation'):
-                personal_area.geolocation = data['geolocation']
-
-            db.session.add(personal_area)
-
             image_schema = Images_personal_area_schema()
-            files = request.files.getlist('photo')
-            for file in files:
-                if file and allowed_file(file.filename):
-                    filename = secure_filename(file.filename)
-                    extension = filename.split()[-1]
-                    new_filename = "upload-{}.{}".format(
-                        uuid4(), extension
-                    )
+            file = request.files.get('photo')
+            if file and allowed_file(file.filename):
+                get_photo = db.session.query(Images_personal_area).filter_by(id_personal_area=personal_area.id).first()
+                if get_photo:
+                    photo = Images_personal_area.query.get(get_photo.id)
+                    db.session.delete(photo)
+                    if photo.image_path != '/images/default.jpg':
+                        path_delete = current_app.config['PROJECT_HOME'] + photo.image_path
+                        os.remove(path_delete)
+                    db.session.commit()
 
-                    file.save(os.path.join(current_app.config['UPLOAD_FOLDER_PERSONAL_AREA'], new_filename))
-                    img_data = {
-                        "image_path": f'/images/uploads_personal_area/{new_filename}',
-                        "id_personal_area": personal_area.id
-                    }
-                    db_image = image_schema.load(img_data)
-                    db.session.add(db_image)
+                filename = secure_filename(file.filename)
+                extension = filename.split()[-1]
+                new_filename = "upload-{}.{}".format(
+                    uuid4(), extension
+                )
 
-            db.session.commit()
-            return {'message': 'successfully!'}, 201
+                file.save(os.path.join(current_app.config['UPLOAD_FOLDER_PERSONAL_AREA'], new_filename))
+                img_data = {
+                    "image_path": f'/images/personal_area/{new_filename}',
+                    "id_personal_area": personal_area.id
+                }
+                db_image = image_schema.load(img_data)
+                db.session.add(db_image)
         except:
-            return {'message': 'error edit personal area'}, 401
+            return {'message': 'error edit photo'}, 401
+        db.session.commit()
+        return {'message': 'successfully!'}, 201
     return {'error': 'Personal_area not found'}, 401
 
 
@@ -127,11 +154,8 @@ def update_personal_area(token):
 @token_check
 def delete_personal_area(token):
     get_user = User.query.filter(User.token == token).one()
-    check_personal_area = db.session.query(Personal_area).filter_by(id_user=get_user.id).first()
-    personal_area = Personal_area.query.get(check_personal_area.id)
-    if personal_area:
-        personal_area.deleted = True
-        db.session.add(personal_area)
-        db.session.commit()
-        return {"message": 'User is deleted'}, 200
-    return {'error': 'Personal_area not found'}, 401
+    user = User.query.get(get_user.id)
+    user.is_active = 0
+    db.session.add(user)
+    db.session.commit()
+    return {"message": 'User is deleted'}, 200
