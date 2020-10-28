@@ -12,15 +12,12 @@ class Config:
     PROJECT_HOME = os.path.dirname(os.path.realpath(__file__)).replace('/settings', '')
     UPLOAD_FOLDER_ANNOUN = '{}/images/announcement/'.format(PROJECT_HOME)
     UPLOAD_FOLDER_PERSONAL_AREA = '{}/images/personal_area/'.format(PROJECT_HOME)
+    UPLOAD_FOLDER_CHARITIES = '{}/images/charities/'.format(PROJECT_HOME)
     ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'png"', 'jpg"', 'jpeg"'])
     OAUTH_CREDENTIALS = {
         'facebook': {
             'id': '649881479030378',
             'secret': '32b05f9979c1a1bb7632e31f216e38cb'
-        },
-        'twitter': {
-            'id': '3RzWQclolxWZIMq5LJqzRZPTl',
-            'secret': 'm9TEd58DSEtRrZHpz2EjrV9AhsBRxKMo8m3kuIZj3zLwzwIimt'
         },
         'google': {
             'id': '157583496567-p15f3jnijg9oe9d29erpveomb58mr4n0.apps.googleusercontent.com',

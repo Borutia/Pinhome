@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: c9c2f4a1049b
+Revision ID: c8a8235019ca
 Revises: 
-Create Date: 2020-10-26 21:20:19.612619
+Create Date: 2020-10-28 20:21:26.595125
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'c9c2f4a1049b'
+revision = 'c8a8235019ca'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -23,6 +23,14 @@ def upgrade():
     sa.Column('name', sa.String(length=100), nullable=False),
     sa.Column('parent', sa.Integer(), nullable=True),
     sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('charities',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('name', sa.String(length=200), nullable=False),
+    sa.Column('is_active', sa.Boolean(), nullable=False),
+    sa.Column('description', sa.String(length=5000), nullable=False),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('name')
     )
     op.create_table('users',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -43,9 +51,41 @@ def upgrade():
     sa.Column('created', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
     sa.Column('deleted', sa.Boolean(), nullable=True),
     sa.Column('user', sa.Integer(), nullable=False),
+    sa.Column('city', sa.String(length=200), nullable=True),
+    sa.Column('address', sa.String(length=500), nullable=True),
     sa.ForeignKeyConstraint(['category'], ['category.id'], ),
     sa.ForeignKeyConstraint(['user'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('charities_address',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('address', sa.String(length=500), nullable=False),
+    sa.Column('id_charities', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['id_charities'], ['charities.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('charities_contacts',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('contact', sa.String(length=500), nullable=False),
+    sa.Column('id_charities', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['id_charities'], ['charities.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('charities_social_networks',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('social_networks', sa.String(length=500), nullable=False),
+    sa.Column('id_charities', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['id_charities'], ['charities.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('images_charities',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('image_path', sa.String(), nullable=True),
+    sa.Column('created', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.Column('id_charities', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['id_charities'], ['charities.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('id_charities')
     )
     op.create_table('personal_area',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -128,7 +168,12 @@ def downgrade():
     op.drop_table('deal')
     op.drop_table('users_social')
     op.drop_table('personal_area')
+    op.drop_table('images_charities')
+    op.drop_table('charities_social_networks')
+    op.drop_table('charities_contacts')
+    op.drop_table('charities_address')
     op.drop_table('announcement')
     op.drop_table('users')
+    op.drop_table('charities')
     op.drop_table('category')
     # ### end Alembic commands ###
