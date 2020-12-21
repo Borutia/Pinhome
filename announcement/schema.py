@@ -1,7 +1,8 @@
-from marshmallow_sqlalchemy import ModelSchema, auto_field
-from marshmallow import fields, pre_dump
-from .models import Announcement, ImagesAnnoun, Category, Want, RecentlyViewed, TypeClose, ReasonClose, Closed
+from marshmallow import fields
+from marshmallow_sqlalchemy import ModelSchema
+
 from ext import db
+from .models import Announcement, ImagesAnnoun, Category, Want, RecentlyViewed, TypeClose, ReasonClose, Closed
 
 
 class AnnouncementImageSchema(ModelSchema):
@@ -47,7 +48,6 @@ class WantSchema(ModelSchema):
 
     id = fields.Integer(required=False)
     announcement = fields.Integer(load_only=True, required=False)
-    str_want = fields.String(required=True)
     category = fields.Integer(load_only=True, required=True)
     want_cat = fields.Nested(CategorySchema, dump_only=True, only=["id", "name"])
 
@@ -118,10 +118,12 @@ class AnnouncementSchema(ModelSchema):
     created_date = fields.Date(dump_only=True)
     user = fields.Integer(required=True)
     images = fields.Nested(AnnouncementImageSchema, many=True)
-    want = fields.Nested(WantSchema, many=True)
+    want = fields.Nested(WantSchema, many=True, required=False)
     city = fields.String(required=False)
     address = fields.String(required=False)
     reason = fields.Nested(ClosedNestedSchema, dump_only=True)
+    no_exchange = fields.Boolean(required=False)
+    str_want = fields.String(required=False)
 
 
 class RecentlyViewedSchema(ModelSchema):
