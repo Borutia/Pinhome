@@ -7,12 +7,12 @@ services:
     volumes:
      - ./app
     links:
-     - db:postgres
+     - db
     depends_on:
      - db
   db:
     hostname: postgres
-    image: postgres:latest
+    image: postgres
     environment:
       POSTGRES_PASSWORD: password
     volumes:
